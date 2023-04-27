@@ -94,7 +94,8 @@ def FindHyperbolicTrajectory(f,lminus,lplus,XQ,tmin,tmax,N):
     epsF = 1e-8
     epsC = 1e-8
     K = 200
-    
+    delta = DF0solve(Fx)
+
 
 
     while  (normFx > epsF or np.linalg.norm(delta) > epsC) and i < K:

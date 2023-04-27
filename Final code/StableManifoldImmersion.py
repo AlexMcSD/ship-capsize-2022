@@ -96,7 +96,7 @@ def getInterpolatedImmersionS(CapsizeSide, method ="rbf"): # CapsizeSide determi
             if l< len(t0indices) - 2:
                 SM1 = interpxS[ thyperbolic[t0indices[l]]](array([q]))[0]
                 SM2 = interpxS[ thyperbolic[t0indices[l+1]]](array([q]))[0]
-                return SM1 + ((t - t)/(t1-t))*(SM2-SM1)
+                return SM1 + ((t - t0)/(t1-t0))*(SM2-SM1)
             else: 
                 return nan
         def ySM(q,t):  # we search through the sample times,then output the linear interpolation of the RBF interpolations for the smapled time slices above and below the time t.
@@ -110,7 +110,7 @@ def getInterpolatedImmersionS(CapsizeSide, method ="rbf"): # CapsizeSide determi
             if l< len(t0indices) - 2:
                 SM1 = interpyS[ thyperbolic[t0indices[l]]](array([q]))[0]
                 SM2 = interpyS[ thyperbolic[t0indices[l+1]]](array([q]))[0]
-                return SM1 + ((t - t)/(t1-t))*(SM2-SM1)
+                return SM1 + ((t - t0)/(t1-t0))*(SM2-SM1)
             else: 
                 return nan
         def vxSM(q,t):  # we search through the sample times,then output the linear interpolation of the RBF interpolations for the smapled time slices above and below the time t.
@@ -124,7 +124,7 @@ def getInterpolatedImmersionS(CapsizeSide, method ="rbf"): # CapsizeSide determi
             if l< len(t0indices) - 2:
                 SM1 = interpvxS[ thyperbolic[t0indices[l]]](array([q]))[0]
                 SM2 = interpvxS[ thyperbolic[t0indices[l+1]]](array([q]))[0]
-                return SM1 + ((t - t)/(t1-t))*(SM2-SM1)
+                return SM1 + ((t - t0)/(t1-t0))*(SM2-SM1)
             else: 
                 return nan
         def vySM(q,t):  # we search through the sample times,then output the linear interpolation of the RBF interpolations for the smapled time slices above and below the time t.
@@ -138,7 +138,7 @@ def getInterpolatedImmersionS(CapsizeSide, method ="rbf"): # CapsizeSide determi
             if l< len(t0indices) - 2:
                 SM1 = interpvyS[ thyperbolic[t0indices[l]]](array([q]))[0]
                 SM2 = interpvyS[ thyperbolic[t0indices[l+1]]](array([q]))[0]
-                return SM1 + ((t - t)/(t1-t))*(SM2-SM1)
+                return SM1 + ((t - t0)/(t1-t0))*(SM2-SM1)
             else: 
                 return nan
     delta= 1e-10 # used to differentiate iota
