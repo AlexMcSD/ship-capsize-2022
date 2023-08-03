@@ -9,23 +9,23 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.interpolate import RBFInterpolator
 from scipy.interpolate import LinearNDInterpolator
 # importing the data
-pointsSMplus= np.load("pointsSMplus.npy")
-valxSplus = np.load("valxSplus.npy")
-valySplus= np.load("valySplus.npy")
-valvxSplus= np.load("valvxSplus.npy")
-valvySplus= np.load("valvySplus.npy")
-timekeyplus = np.load("timekeyplus.npy")
-pointsSMminus = np.load("pointsSMminus.npy")
-valxSminus = np.load("valxSminus.npy")
-valySminus= np.load("valySminus.npy")
-valvxSminus= np.load("valvxSminus.npy")
-valvySminus= np.load("valvySminus.npy")
-timekeyminus  = np.load("timekeyminus.npy")
-thyperbolic = np.load("thyperbolic.npy")
-tindicesSplus = np.load("tindicesSplus.npy")
-tindicesSminus = np.load("tindicesSminus.npy")
+#pointsSMplus= np.load("pointsSMplus.npy")
+#valxSplus = np.load("valxSplus.npy")
+#valySplus= np.load("valySplus.npy")
+#valvxSplus= np.load("valvxSplus.npy")
+#valvySplus= np.load("valvySplus.npy")
+#timekeyplus = np.load("timekeyplus.npy")
+#pointsSMminus = np.load("pointsSMminus.npy")
+#valxSminus = np.load("valxSminus.npy")
+#valySminus= np.load("valySminus.npy")
+#valvxSminus= np.load("valvxSminus.npy")
+#valvySminus= np.load("valvySminus.npy")
+#timekeyminus  = np.load("timekeyminus.npy")
+#thyperbolic = np.load("thyperbolic.npy")
+#tindicesSplus = np.load("tindicesSplus.npy")
+#tindicesSminus = np.load("tindicesSminus.npy")
 from numpy import nan
-def getInterpolatedImmersionS(CapsizeSide, method ="rbf"): # CapsizeSide determines whih side we consider, # method can be RBF interpolation of Linear interpolation
+def getInterpolatedImmersionS(CapsizeSide, pointsSMplus,valxSplus,valySplus,valvxSplus,valvySplus,timekeyplus,pointsSMminus,valxSminus,valySminus,valvxSminus,valvySminus,timekeyminus,thyperbolic,tindicesSplus, tindicesSminus,method ="rbf"): # CapsizeSide determines whih side we consider, # method can be RBF interpolation of Linear interpolation
     # rbf is normally better as it is smooth and is globablly defined.
     if CapsizeSide == 'positive':  # we set the specific points/values to be used depending on the capsize side
         pointsSM = pointsSMplus

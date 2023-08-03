@@ -7,7 +7,7 @@ import scipy.linalg
 from System import MakeSystem
 
 
-def FindStableTrajectory(f,lminus,lplus,tmin,tmax,N,p,J,Xhyp):
+def FindStableTrajectory(f,lminus,lplus,tmin,tmax,N,p,J,Xhyp,A):  # p  is initial displacement along the stable direction [1,lminus]
     t = np.linspace(tmin,tmax,N)
     dt = (tmax-tmin)/N
     Deltatminus = int(np.log(10)/((1+lminus**2)*dt))
@@ -15,14 +15,16 @@ def FindStableTrajectory(f,lminus,lplus,tmin,tmax,N,p,J,Xhyp):
     imax, imin = min(J + Deltatplus, N-1), max(J - Deltatminus,0) 
 #    imax, imin = N-1,max(J - Deltatminus,0) 
     newtmin = t[imin]
+    P = np.array([[1,1],[lminus,lplus]])
+    Pinv = np.linalg.inv(P)
     newtmax = t[imax]
     N = imax - imin
     XhypJ = Xhyp[J]
-    XhypEnd = Xhyp[imax]
+    XhypEnd = Xhyp[imax-1]
     X0 = np.zeros((N,2))
     for i in range(0,N):
 #        X0[i] = Xhyp[i+imin]+ array([p*exp(-(1+lminus**2)*(t[i+imin] - t[J])),0])  
-        X0[i] = array([p*exp(-(1+lminus**2)*(t[i+imin] - t[J])),0])  
+        X0[i] =p*exp(-(1+lminus**2)*(t[i+imin] - t[J]))*np.array([1,lminus])
     X0 = X0.reshape(2*N) #  len(t) by 2 array
     J = J -imin
     X = X0
@@ -40,22 +42,18 @@ def FindStableTrajectory(f,lminus,lplus,tmin,tmax,N,p,J,Xhyp):
         for i in range(0, N-1):
 #            Y[i] = phi(X[i],t[i]) - X[i+1]
              Y[i] = phi(X[i]+Xhyp[i+imin],t[i+imin]) - X[i+1] - Xhyp[i+1+imin]
-        Y[-1][0] =  X[J][0]-XhypJ[0]-p
-        Y[-1][1] =  X[-1][1] - XhypEnd[1]
+        Y[-1][0] =  Pinv.dot(X[J])[0]-p
+        Y[-1][1] =  Pinv.dot(X[-1])[1]
         return Y.reshape(2*N)
     # Derivative for linear system
     DF0 = np.zeros((2*N,2*N))
-    for i in range(0,2*N-2):
-        for j in range(0,2*N):
-            if j == i:
-                if i % 2 == 0:
-                    DF0[i,j] = exp((-1-lminus**2)*dt)
-                else:
-                    DF0[i,j] = exp((+1+lplus**2)*dt)
-            elif j == i + 2:
-                DF0[i,j] = -1
-    DF0[2*N-2,2*J] = 1
-    DF0[2*N-1,2*N-1] = 1
+    Dphi = scipy.linalg.expm(dt*A)
+    for i in range(0,N-1):
+        for j in range(0,N-1):
+            DF0[2*i:2*i+2,2*i:2*i+2] = Dphi
+            DF0[2*i:2*i+2,2*i+2:2*i+4] = -np.eye(2)
+    DF0[2*N-2,2*J:2*J+2] = np.dot(Pinv.transpose(), np.array([1,0]))
+    DF0[2*N-1,2*N-2:2*N] = np.dot(Pinv.transpose(), np.array([0,1]))
     P, L, U = scipy.linalg.lu(DF0) # numerical LU decomposition. Save this and integrate into code.
     def Usolve(y0):
         x = 0*y0
@@ -86,6 +84,7 @@ def FindStableTrajectory(f,lminus,lplus,tmin,tmax,N,p,J,Xhyp):
     epsF = 1e-6
     epsC = 1e-7
     K = 200
+    delta = DF0solve(Fx)
     while  (normFx > epsF or np.linalg.norm(delta) > epsC) and i < K:
         delta = DF0solve(Fx)
         X = X-delta # update sequence
@@ -94,27 +93,29 @@ def FindStableTrajectory(f,lminus,lplus,tmin,tmax,N,p,J,Xhyp):
         normFx = np.linalg.norm(Fx) # compute norm to check the estimate
     X = X.reshape((N,2)) + Xhyp[imin:imax]
     X0 = X0.reshape((N,2))
-    print(" after " + str(i) + " iterations an estimate with error of F =" + str(normFx) + " and delta = "+ str(np.linalg.norm(delta))+ "was produced")
+ #   print(" after " + str(i) + " iterations an estimate with error of F =" + str(normFx) + " and delta = "+ str(np.linalg.norm(delta))+ "was produced")
     tnew = t[imin:imax]
     return X,tnew, X0,J
 
 
-def FindUnstableTrajectory(f,lminus,lplus,tmin,tmax,N,q,J,Xhyp):
+def FindUnstableTrajectory(f,lminus,lplus,tmin,tmax,N,q,J,Xhyp,A):
     t = np.linspace(tmin,tmax,N)
     dt = (tmax-tmin)/N
-    Deltatminus = int(np.log(30)/((1+lminus**2)*dt))
-    Deltatplus = int((np.log(10)/(dt*(1+lplus**2))))
+    Deltatminus = int(np.log(10)/((1+lminus**2)*dt))
+    Deltatplus = int((np.log(30)/(dt*(1+lplus**2))))
     imax, imin = min(J + Deltatplus, N-1), max(J - Deltatminus,0) 
 #    imax, imin = N-1,max(J - Deltatminus,0) 
     newtmin = t[imin]
+    P = np.array([[1,1],[lminus,lplus]])
+    Pinv = np.linalg.inv(P)
     newtmax = t[imax]
     N = imax - imin
     XhypJ = Xhyp[J]
-    XhypStart = Xhyp[imin]
+    XhypEnd = Xhyp[imax-1]
     X0 = np.zeros((N,2))
     for i in range(0,N):
 #        X0[i] = Xhyp[i+imin]+ array([p*exp(-(1+lminus**2)*(t[i+imin] - t[J])),0])  
-        X0[i] = array([0,q*exp((1+lplus**2)*(t[i+imin] - t[J]))])  
+        X0[i] =q*exp(-(1+lminus**2)*(t[i+imin] - t[J]))*np.array([1,lplus])
     X0 = X0.reshape(2*N) #  len(t) by 2 array
     J = J -imin
     X = X0
@@ -132,22 +133,18 @@ def FindUnstableTrajectory(f,lminus,lplus,tmin,tmax,N,q,J,Xhyp):
         for i in range(0, N-1):
 #            Y[i] = phi(X[i],t[i]) - X[i+1]
              Y[i] = phi(X[i]+Xhyp[i+imin],t[i+imin]) - X[i+1] - Xhyp[i+1+imin]
-        Y[-1][0] =  X[J][1]-XhypJ[1]-q
-        Y[-1][1] =  X[0][0] - XhypStart[0]
+        Y[-1][0] =  Pinv.dot(X[J])[1]-q  # Boundary condition
+        Y[-1][1] =  Pinv.dot(X[0])[0]
         return Y.reshape(2*N)
     # Derivative for linear system
     DF0 = np.zeros((2*N,2*N))
-    for i in range(0,2*N-2):
-        for j in range(0,2*N):
-            if j == i:
-                if i % 2 == 0:
-                    DF0[i,j] = exp((-1-lminus**2)*dt)
-                else:
-                    DF0[i,j] = exp((+1+lplus**2)*dt)
-            elif j == i + 2:
-                DF0[i,j] = -1
-    DF0[2*N-2,2*J+1] = 1
-    DF0[2*N-1,0] = 1
+    Dphi = scipy.linalg.expm(dt*A)
+    for i in range(0,N-1):
+        for j in range(0,N-1):
+            DF0[2*i:2*i+2,2*i:2*i+2] = Dphi
+            DF0[2*i:2*i+2,2*i+2:2*i+4] = -np.eye(2)
+    DF0[2*N-2,2*J:2*J+2] = np.dot(Pinv.transpose(), np.array([0,1]))
+    DF0[2*N-1,0:2] = np.dot(Pinv.transpose(), np.array([1,0]))
     P, L, U = scipy.linalg.lu(DF0) # numerical LU decomposition. Save this and integrate into code.
     def Usolve(y0):
         x = 0*y0
@@ -178,6 +175,7 @@ def FindUnstableTrajectory(f,lminus,lplus,tmin,tmax,N,q,J,Xhyp):
     epsF = 1e-6
     epsC = 1e-7
     K = 200
+    delta = DF0solve(Fx)
     while  (normFx > epsF or np.linalg.norm(delta) > epsC) and i < K:
         delta = DF0solve(Fx)
         X = X-delta # update sequence
@@ -186,6 +184,7 @@ def FindUnstableTrajectory(f,lminus,lplus,tmin,tmax,N,q,J,Xhyp):
         normFx = np.linalg.norm(Fx) # compute norm to check the estimate
     X = X.reshape((N,2)) + Xhyp[imin:imax]
     X0 = X0.reshape((N,2))
-    print(" after " + str(i) + " iterations an estimate with error of F =" + str(normFx) + " and delta = "+ str(np.linalg.norm(delta))+ "was produced")
+ #   print(" after " + str(i) + " iterations an estimate with error of F =" + str(normFx) + " and delta = "+ str(np.linalg.norm(delta))+ "was produced")
     tnew = t[imin:imax]
     return X,tnew, X0,J
+

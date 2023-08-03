@@ -10,10 +10,11 @@ def MakeSystem(k,ForcingParameters):
     Amplitudes = ForcingParameters[2*np.arange(0,forcingComponents,1)]
     Frequencies = ForcingParameters[2*np.arange(0,forcingComponents,1)+1]
     G = lambda t : np.sum(Amplitudes*np.cos(Frequencies*t))
-    f = lambda t,y : array([-y[0]*lminus**2 + y[1] -tanh(y[0]+y[1])*(cosh(y[0]+y[1])**(-2)) -G(t) , -y[0] + lplus**2 * y[1] +tanh(y[0]+y[1])*(cosh(y[0]+y[1])**(-2)) + G(t)])
+    f = lambda t,y : np.array([y[1], np.tanh(y[0])*np.cosh(y[0])**(-2) - k*y[1]]+G(t)) # vector field in original coordinates
     lminus = (-k - (k**2 + 4)**.5)/2
     lplus = (-k + (k**2 + 4)**.5)/2
-    return f,lminus,lplus,G
+    A = np.array([[0,1],[1,-k]])
+    return f,lminus,lplus,G, A
 
 def MakeLinearisedSolution(ForcingParameters,lplus,lminus): # ForcingParameters = (amplitude1, frequency1,....)
     forcingComponents = int(len(ForcingParameters)/2)
@@ -22,12 +23,13 @@ def MakeLinearisedSolution(ForcingParameters,lplus,lminus): # ForcingParameters 
     Frequencies = 1.0*ForcingParameters[2*np.arange(0,forcingComponents,1)+1]
     #XQ = lambda t : array([ -A1*((1+ (muminus/w1)**2)**(-1)*(w1**(-1)*sin(w1*t) + (muminus/(w1**2))*cos(w1*t) )) -A2*((1+ (muminus/w2)**2)**(-1)*(w2**(-1)*sin(w2*t) + (muminus/(w2**2))*cos(w2*t) )),
     #                   A1*((1+ (muplus/w1)**2)**(-1)*(w1**(-1)*sin(w1*t) + (muplus/(w1**2))*cos(w1*t) ) )+A2*((1+ (muplus/w2)**2)**(-1)*(w2**(-1)*sin(w2*t) + (muplus/(w2**2))*cos(w2*t) ) )])
-    XQ = lambda t : array([ np.sum(-Amplitudes*((1+ (muminus/Frequencies)**2)**(-1)*(Frequencies**(-1)*sin(Frequencies*t) + (muminus/(Frequencies**2))*cos(Frequencies*t)))) , 
-                           np.sum(Amplitudes*((1+ (muplus/Frequencies)**2)**(-1)*(Frequencies**(-1)*sin(Frequencies*t) + (muplus/(Frequencies**2))*cos(Frequencies*t) ) ))])
+    P = np.array([[1,1],[lminus,lplus]])
+    XQ = lambda t : P.dot(array([ np.sum(-Amplitudes*((1+ (muminus/Frequencies)**2)**(-1)*(Frequencies**(-1)*sin(Frequencies*t) + (muminus/(Frequencies**2))*cos(Frequencies*t)))) , 
+                           np.sum(Amplitudes*((1+ (muplus/Frequencies)**2)**(-1)*(Frequencies**(-1)*sin(Frequencies*t) + (muplus/(Frequencies**2))*cos(Frequencies*t) ) ))]))
     return XQ
     
 
-def FindHyperbolicTrajectory(f,lminus,lplus,XQ,tmin,tmax,N):
+def FindHyperbolicTrajectory(f,lminus,lplus,XQ,tmin,tmax,N,A):
     t = np.linspace(tmin,tmax,N)
     dt = (tmax-tmin)/N
     X0 = np.zeros((N,2))
@@ -35,6 +37,8 @@ def FindHyperbolicTrajectory(f,lminus,lplus,XQ,tmin,tmax,N):
         X0[i] = XQ(t[i])
     X0 = X0.reshape(2*N) #  len(t) by 2 array
     X = X0
+    P = np.array([[1,1],[lminus,lplus]])
+    Pinv = np.linalg.inv(P)
     # evolution over one time step dt
     def phi(y0,t0):
         res = solve_ivp (f, [t0,dt+t0], y0 , method = "RK45" , max_step =dt/2 , rtol = 1e-10 )
@@ -48,22 +52,18 @@ def FindHyperbolicTrajectory(f,lminus,lplus,XQ,tmin,tmax,N):
         X = X.reshape((N,2))
         for i in range(0, N-1):
             Y[i] = phi(X[i],t[i]) - X[i+1]
-        Y[-1][0] =  X[0][0]
-        Y[-1][1] =  X[-1][1]
+        Y[-1][0] =  Pinv.dot(X[0])[0]
+        Y[-1][1] =  Pinv.dot(X[-1])[1]
         return Y.reshape(2*N)
     # Derivative for linear system
     DF0 = np.zeros((2*N,2*N))
-    for i in range(0,2*N-2):
-        for j in range(0,2*N):
-            if j == i:
-                if i % 2 == 0:
-                    DF0[i,j] = exp((-1-lminus**2)*dt)
-                else:
-                    DF0[i,j] = exp((+1+lplus**2)*dt)
-            elif j == i + 2:
-                DF0[i,j] = -1
-    DF0[2*N-2,0] = 1
-    DF0[2*N-1,2*N-1] = 1
+    Dphi = scipy.linalg.expm(dt*A)
+    for i in range(0,N-1):
+        for j in range(0,N-1):
+            DF0[2*i:2*i+2,2*i:2*i+2] = Dphi
+            DF0[2*i:2*i+2,2*i+2:2*i+4] = -np.eye(2)
+    DF0[2*N-2,0:2] = np.dot(Pinv.transpose(), np.array([1,0]))
+    DF0[2*N-1,2*N-2:2*N] = np.dot(Pinv.transpose(), np.array([0,1]))
     P, L, U = scipy.linalg.lu(DF0) # numerical LU decomposition. Save this and integrate into code.
     def Usolve(y0):
         x = 0*y0
