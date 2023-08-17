@@ -1,5 +1,7 @@
 The files are designed to be performed in Jupyter Notebook. Store separate systems in separate folders, to keep the data separate.
 
+To import data from different files, only the FileName variable needs to be changed to the appropriate name. This will also save all data to that file.
+
 model.py : stores functions such as the vector field and eigenbasis coordinates used in multiple notebooks
 
 HyperbolicTrajectory.ipynb: set inital model and forcing parameters, finds and saves the hyperbolic trajectories corresponding to capsize
