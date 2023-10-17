@@ -1,4 +1,4 @@
-The files are designed to be performed in Jupyter Notebook. Store separate systems in separate folders, to keep the data separate.
+The files  to be run in a Jupyter Notebook. Store separate systems in separate folders.
 
 To import data from different files, only the FileName variable needs to be changed to the appropriate name. This will also save all data to that file.
 
