@@ -1,0 +1,12 @@
+Parameters: epsF = 1e-7 epsC = 1e-6
+Forcing 	Accuracy	Sensitivity	Specificity
+Quasi-periodic	96.9		92.7		99.8
+White-noise	93.6		96.2		92.0
+
+Parameters: epsF = 1e-6 epsC = 1e-5
+Forcing 	Accuracy	Sensitivity	Specificity
+Quasi-periodic	90.6		88.2		92.5
+White-noise	92.6		91.0		93.4
+
+
+
